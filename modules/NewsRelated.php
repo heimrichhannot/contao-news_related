@@ -19,11 +19,25 @@ namespace NewsRelated;
 
 class NewsRelated extends \Frontend
 {
+
+	/**
+	 * Load different classes for further string modifications
+	 */
+	public function strClass()
+	{
+		$strStringClass = version_compare(VERSION . '.' . BUILD, '3.5.1', '<') ? '\String' : '\StringUtil';
+
+		return $strStringClass;
+	}
+
+
 	public function newsreaderChange($objTemplate)
 	{
-		// Choose template
-		if ($objTemplate->getName() == 'mod_newsreader') {
+    $strStringClass = $this->strClass();
 
+		// Choose template
+		if ($objTemplate->getName() == 'mod_newsreader')
+		{
 			// Limit
 			if($objTemplate->related_numberOfItems >= 0 && $objTemplate->related_numberOfItems <= 50)
 			{
@@ -34,9 +48,11 @@ class NewsRelated extends \Frontend
 				$limit = 4;
 			}
 
-			if($limit >= 0) {
+			if($limit >= 0)
+			{
 			}
-			else {
+			else
+			{
         return '';
 			}
 
@@ -95,11 +111,10 @@ class NewsRelated extends \Frontend
 					}
 
 					// Shorten the teaser
-					$this->import('String');
 					$teaser = strip_tags($objArticle->teaser,array('<strong>','<a>'));
 					if(strlen($teaser) > 120)
 					{
-					  $teaser = $this->String->substrHtml($teaser, 120) . '...';
+					  $teaser = $strStringClass::substrHtml($teaser, 120) . '...';
 					}
 
 			    $objArchive = $this->Database->prepare("SELECT tstamp, title, jumpTo FROM tl_news_archive WHERE id=?")->execute($objArticle->pid);

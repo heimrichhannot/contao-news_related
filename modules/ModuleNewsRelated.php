@@ -21,6 +21,17 @@ class ModuleNewsRelated extends \ModuleNews
 {
 
 	/**
+	 * Load different classes for further string modifications
+	 */
+	public function strClass()
+	{
+		$strStringClass = version_compare(VERSION . '.' . BUILD, '3.5.1', '<') ? '\String' : '\StringUtil';
+
+		return $strStringClass;
+	}
+
+
+	/**
 	 * Template
 	 * @var string
 	 */
@@ -103,6 +114,8 @@ class ModuleNewsRelated extends \ModuleNews
 	 */
 	protected function parseArticle($objArticle, $blnAddArchive=false, $strClass='', $intCount=0)
 	{
+    $strStringClass = $this->strClass();
+
 		global $objPage;
 
 		$objTemplate = new \FrontendTemplate($this->news_template);
@@ -135,7 +148,7 @@ class ModuleNewsRelated extends \ModuleNews
 
 		$objTemplate->more = $more;
 
-		$objTemplate->count = $intCount; // see #5708
+		$objTemplate->count = $intCount;
 		$objTemplate->text = '';
 
 		// Clean the RTE output
@@ -143,21 +156,20 @@ class ModuleNewsRelated extends \ModuleNews
 		{
 			if ($objPage->outputFormat == 'xhtml')
 			{
-				$objTemplate->teaser = \String::toXhtml($objArticle->teaser);
+				$objTemplate->teaser = $strStringClass::toXhtml($objArticle->teaser);
 			}
 			else
 			{
-				$objTemplate->teaser = \String::toHtml5($objArticle->teaser);
+				$objTemplate->teaser = $strStringClass::toHtml5($objArticle->teaser);
 			}
 
-			$objTemplate->teaser = \String::encodeEmail($objTemplate->teaser);
+			$objTemplate->teaser = $strStringClass::encodeEmail($objTemplate->teaser);
 
-			//Text kürzen
-			$this->import('String');
+			// Shorten the teaser
 			$objTemplate->teaser = strip_tags($objTemplate->teaser,array('<strong>','<a>'));
 			if(strlen($objTemplate->teaser) > 120)
 			{
-			  $objTemplate->teaser = $this->String->substrHtml($objTemplate->teaser, 120).'...';
+			  $objTemplate->teaser = $strStringClass::substrHtml($objTemplate->teaser, 120).'...';
 			}
 		}
 
@@ -247,7 +259,7 @@ class ModuleNewsRelated extends \ModuleNews
 			foreach ($GLOBALS['TL_HOOKS']['parseArticles'] as $callback)
 			{
 				$this->import($callback[0]);
-				$this->$callback[0]->$callback[1]($objTemplate, $objArticle->row(), $this);
+				$this->{$callback[0]}->{$callback[1]}($objTemplate, $objArticle->row(), $this);
 			}
 		}
 
