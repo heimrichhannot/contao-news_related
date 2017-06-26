@@ -1,0 +1,55 @@
+<?php $this->extend('block_searchable'); ?>
+
+<?php $this->block('content'); ?>
+
+  <?php echo $this->articles; ?>
+
+  <!-- indexer::stop -->
+  <p class="back"><a href="<?php echo $this->referer; ?>" title="<?php echo $this->back; ?>"><?php echo $this->back; ?></a></p>
+  <!-- indexer::continue -->
+
+  <?php if ($this->allowComments && ($this->comments || !$this->requireLogin)): ?>
+    <div class="ce_comments block">
+      <<?php echo $this->hlc; ?>><?php echo $this->addComment; ?></<?php echo $this->hlc; ?>>
+      <?php foreach ($this->comments as $comment) echo $comment; ?>
+      <?php echo $this->pagination; ?>
+      <?php include $this->getTemplate('mod_comment_form', 'xhtml'); ?>
+    </div>
+  <?php endif; ?>
+
+	<?php	if ($this->newsRelated): ?>
+		<div class="news_related block">
+			<div class="related_headline"><h2><?php echo $this->related_headline; ?></h2></div>
+			<div class="related_content">
+				<div class="related_info"><?php echo $this->info; ?></div>
+
+				<div class="related_items block">
+					<?php foreach ($this->newsRelated as $related): ?>
+						<div class="related_item block">
+							<?php if($related['image']): ?>
+								<div class="image_container">
+									<?php if ($related['url']): ?>
+										<a href="<?php echo $related['url']; ?>" title="<?php echo $related['image']['alt']; ?>" rel="lightbox">
+									<?php endif; ?>
+
+									<?php $this->insert('picture_default', $related['image']['picture']); ?>
+
+						      <?php if ($related['url']): ?>
+						        </a>
+						      <?php endif; ?>
+								</div>
+							<?php endif; ?>
+
+							<p class="info"><div class="time"><?php echo $related['date']; ?></div> <?php echo $related['commentCount']; ?></p>
+
+							<div class="item_headline"><h3><a href="<?php echo $related['url']; ?>" title="<?php echo $related['title']; ?>"><?php echo $related['headline']; ?></a></h3></div>
+
+							<div class="item_teaser"><?php echo $related['teaser']; ?> <span class="more"><?php echo $related['more']; ?></span></div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		</div>
+	<?php endif; ?>
+
+<?php $this->endblock(); ?>
