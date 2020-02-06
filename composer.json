@@ -12,9 +12,12 @@
   ],
   "require":{
     "php":">=5.3",
-    "contao/core": "~3.2",
-    "contao-community-alliance/composer-plugin": "~2.4",
-    "oneup/contao-tags": "dev-master"
+    "contao/core-bundle": "~3.5.1 || ^4.4",
+    "contao-community-alliance/composer-plugin": "~2.4 || ~3.0",
+    "oneup/contao-tags": "^4.0"
+  },
+  "replace": {
+    "contao-legacy/news_related": "*"
   },
   "extra":{
     "contao": {
