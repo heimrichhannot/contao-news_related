@@ -65,7 +65,9 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['thumbSize'] = array
 	'label'							=> &$GLOBALS['TL_LANG']['tl_module']['imgSize'],
 	'exclude'					  => true,
 	'inputType'					=> 'imageSize',
-	'options'						=> \System::getImageSizes(),
+    'options_callback'        => function() {
+        return \Contao\System::getContainer()->get('contao.image.image_sizes')->getAllOptions();
+    },
 	'reference'					=> &$GLOBALS['TL_LANG']['MSC'],
 	'eval'							=> array('rgxp'=>'natural', 'includeBlankOption'=>true, 'nospace'=>true, 'helpwizard'=>true, 'tl_class'=>'w50'),
   'sql'								=> "varchar(64) NOT NULL default ''"
