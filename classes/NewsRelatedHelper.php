@@ -70,54 +70,60 @@ class NewsRelatedHelper extends \Frontend
 			}
 		}
 
-		if($tags) {
-	    // Tags of current news
-	     $objTags = $this->Database->prepare("SELECT t.tag,n.id AS newsid FROM tl_tag t LEFT JOIN tl_news n ON n.id=? WHERE t.tid = n.id AND t.from_table=?")->execute($newsID,'tl_news');
+        if ($tags)
+        {
+            // Tags of current news
+            $objTags = $this->Database->prepare("SELECT t.tag,n.id AS newsid FROM tl_tag t LEFT JOIN tl_news n ON n.id=? WHERE t.tid = n.id AND t.from_table=?")->execute($newsID, 'tl_news');
 
-	    while($objTags->next()) {
-	      $arrTags[] = $objTags->tag;
-	    }
-			if(!$arrTags) { $tags = false; }
-		}
+            while ($objTags->next())
+            {
+                $arrTags[] = $objTags->tag;
+            }
+            if (!$arrTags)
+            {
+                $tags = false;
+            }
+        }
 
 		$time = time();
 
 		// Change sql select if extension is installed
-		if($extension && $category) {
-			$categories = deserialize($objPid->categories);
-			if(empty($categories) || !is_array($categories)) { $category = false; }
-		}
+        if ($extension && $category)
+        {
+            $categories = deserialize($objPid->categories);
+            if (empty($categories) || !is_array($categories))
+            {
+                $category = false;
+            }
+        }
 
 		// Sorting by priority
-    if($related_priority == 'random')
-		{
-			$order1 = 'rand()';
-			$order2 = 'rand()';
-		}
-		elseif($related_priority == 'date')
-		{
-			$order1 = 'n.date DESC';
-			$order2 = 'n.date DESC';
-		}
-		elseif($related_priority == 'comments')
-		{
-			$order1 = 'count_comments DESC, count_tags DESC, n.date DESC';
-			$order2 = 'count_comments DESC, n.date DESC';
-			$join_comments = true;
-		}
-		elseif($related_priority == 'relevance' || !$related_priority)
-		{
-			$order1 = 'count_tags DESC, n.date DESC';
-			$order2 = 'n.date DESC';
-		}
+        if ($related_priority == 'random')
+        {
+            $order1 = 'rand()';
+            $order2 = 'rand()';
+        } elseif ($related_priority == 'date')
+        {
+            $order1 = 'n.date DESC';
+            $order2 = 'n.date DESC';
+        } elseif ($related_priority == 'comments')
+        {
+            $order1        = 'count_comments DESC, count_tags DESC, n.date DESC';
+            $order2        = 'count_comments DESC, n.date DESC';
+            $join_comments = true;
+        } elseif ($related_priority == 'relevance' || !$related_priority)
+        {
+            $order1 = 'count_tags DESC, n.date DESC';
+            $order2 = 'n.date DESC';
+        }
 
 		if($tags || $category || $archive)
 		{
-	    //1. Select all news with same tags | 2. (Optional) Select all news with same category | 3. Read all news with same archive
-	    $objArticles = $this->Database->execute("
-			SELECT * FROM
-			(
-        " . ($tags ? "
+		    $parameter = [];
+            //1. Select all news with same tags | 2. (Optional) Select all news with same category | 3. Read all news with same archive
+		    $query = "SELECT * FROM (";
+		    if ($tags) {
+                $query .= "
 				(
 					SELECT n.*, count(t.id) AS count_tags, 1 AS type ".($join_comments ? ", count(com.id) AS count_comments" : "")."
 					FROM tl_news n
@@ -131,15 +137,20 @@ class NewsRelatedHelper extends \Frontend
 						".(!BE_USER_LOGGED_IN ? "	AND (n.start = '' OR n.start < '$time') AND (n.stop = '' OR n.stop > '$time') AND n.published = 1" : "")."
 					GROUP BY n.id
 					ORDER BY $order1
-					LIMIT $limit
+					LIMIT ?
 				)
-				" : "") . "
-        " . ($tags && $category ? "
+				";
+                $parameter[] = (int) $limit;
+            }
+		    if ($tags && $category) {
+		        $query .= "
 				UNION
-				" : "") . "
-        " . ($category ? "
+				";
+            }
+		    if ($category) {
+		        $query .= "
 				(
-					SELECT n.*, 0 AS count_tags, 2 AS type ".($join_comments ? ", count(com.id) AS count_comments" : "")."
+					SELECT n.id, n.date, 0 AS count_tags, 2 AS type ".($join_comments ? ", count(com.id) AS count_comments" : "")."
 					FROM tl_news n
 					LEFT JOIN tl_news_categories c
 						ON n.id = c.news_id
@@ -149,17 +160,22 @@ class NewsRelatedHelper extends \Frontend
             ".($join_comments ? "AND com.source = 'tl_news'" : "")."
 						AND n.id!='$newsID'
 						".(!BE_USER_LOGGED_IN ? "	AND (n.start = '' OR n.start < '$time') AND (n.stop = '' OR n.stop > '$time') AND n.published = 1" : "")."
-					GROUP BY n.id
+					GROUP BY n.id, n.date, count_tags
 					ORDER BY $order2
-					LIMIT $limit
+					LIMIT ?
 				)
-				" : "") . "
-        " . (($tags || $category) && $archive ? "
+				";
+		        $parameter[] = (int) $limit;
+            }
+		    if (($tags || $category) && $archive) {
+		        $query .= "
 				UNION
-				" : "") . "
-        " . ($archive ? "
+				";
+            }
+		    if ($archive) {
+		        $query .= "
 				(
-					SELECT n.*, 0 AS count_tags, 3 AS type ".($join_comments ? ", count(com.id) AS count_comments" : "")."
+					SELECT n.id, n.date, 0 AS count_tags, 3 AS type ".($join_comments ? ", count(com.id) AS count_comments" : "")."
 					FROM tl_news n
 					".($join_comments ? "LEFT JOIN tl_comments com ON n.id = com.parent" : "")."
 					WHERE n.pid='$pid'
@@ -167,15 +183,22 @@ class NewsRelatedHelper extends \Frontend
 						AND n.id!='$newsID'
 						".(!BE_USER_LOGGED_IN ? " AND (n.start = '' OR n.start < '$time') AND (n.stop = '' OR n.stop > '$time') AND n.published = 1" : "")."
 					ORDER BY $order2
-					LIMIT $limit
+					LIMIT ?
 				)
-				" : "") . "
+				";
+		        $parameter[] = (int) $limit;
+            }
+
+		    $query .= "
 			)
 			AS n
-			GROUP BY n.id
+			GROUP BY n.id, n.date, count_tags, n.type
 			ORDER BY n.type ASC,n.count_tags DESC,n.date DESC
-			LIMIT $limit
-			");
+			LIMIT ?
+			";
+		    $parameter[] = (int) $limit;
+
+            $objArticles = $this->Database->prepare($query)->execute($parameter);
 
 			return $objArticles;
 		}
